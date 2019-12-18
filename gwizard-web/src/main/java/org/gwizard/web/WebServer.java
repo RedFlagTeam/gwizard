@@ -2,11 +2,16 @@ package org.gwizard.web;
 
 import com.google.common.base.Preconditions;
 import com.google.inject.servlet.GuiceFilter;
+
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.gwizard.web.Scanner.Visitor;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -97,7 +102,12 @@ public class WebServer {
 	 * subclass this WebServer, and change behavior to whatever you want.
 	 */
 	protected Server createServer(WebConfig webConfig) {
-		return new Server(webConfig.getPort());
+        ThreadPool p = webConfig.getServerThreadPool();
+        Server s = new Server(p == null ? new QueuedThreadPool() : p);
+        ServerConnector connector = new ServerConnector(s, webConfig.getNumberOfAcceptors(), webConfig.getNumberOfSelectors());
+        connector.setPort(webConfig.getPort());
+        s.setConnectors(new Connector[] { connector });
+        return s;
 	}
 
 	/**
